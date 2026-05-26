@@ -1,0 +1,54 @@
+{
+  "name": "@johnpatrickwarren-oss/anvil",
+  "version": "0.1.0-pre",
+  "private": false,
+  "description": "Chaos-engineering verdict layer on the DeploySignal substrate. ExpectedFailurePattern contract + four chaos-platform adapter stubs (Gremlin, Chaos Mesh, AWS FIS, Litmus) + expected-fault family suppression hook + reference profile. Wraps the Ville-bounded detector portfolio for the inverse direction: operator injects a fault, verdict says whether the system responded as expected.",
+  "license": "Apache-2.0",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
+    "dist/**/*.d.ts.map",
+    "dist/**/*.js.map",
+    "profiles/**/*.yaml",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "pretest": "tsc && tsc -p tsconfig.test.json",
+    "test": "node --test dist/test/*.test.js",
+    "demo": "node tools/demo-anvil.js"
+  },
+  "dependencies": {
+    "@johnpatrickwarren-oss/deploysignal-engine": "github:johnpatrickwarren-oss/deploysignal-engine#v0.2.0-pre",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.8.0",
+    "typescript": "^6.0.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/johnpatrickwarren-oss/anvil.git"
+  },
+  "keywords": [
+    "chaos-engineering",
+    "verdict",
+    "ville-bound",
+    "fp-control",
+    "deploysignal",
+    "anvil",
+    "chaos-mesh",
+    "gremlin",
+    "aws-fis",
+    "litmus"
+  ]
+}
