@@ -27,7 +27,7 @@
     "demo": "node tools/demo-anvil.js"
   },
   "dependencies": {
-    "@johnpatrickwarren-oss/deploysignal-engine": "github:johnpatrickwarren-oss/deploysignal-engine#v0.2.0-pre",
+    "@johnpatrickwarren-oss/deploysignal-engine": "github:johnpatrickwarren-oss/deploysignal-engine#v0.3.0-pre",
     "js-yaml": "^4.1.0"
   },
   "devDependencies": {
