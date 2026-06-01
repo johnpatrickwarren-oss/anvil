@@ -100,8 +100,6 @@ it; `--check` mode exits non-zero if the file on disk is stale.
 
 ## See also
 
-- `coordination/PRD-29-anvil.md` — PRD with US/FR/NFR/AC/anti-scope
-- `coordination/Q29-ANVIL-CHAOS-VERDICT-SPEC.md` — Architect spec
 - `NORTH-STAR-ARCHITECTURE.md` Addition #29 — contract block + bundle framing
 - `engine/o0/anvil/` — typed contracts + four adapter stubs + suppression hook
 - `profiles/anvil-chaos-experiment.yaml` — reference profile (extends generic-microservice)

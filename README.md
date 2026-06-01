@@ -69,8 +69,6 @@ const adapter = new ChaosMeshAdapter(kubeconfigPath, namespace);
 
 ## See also
 
-- `coordination/PRD-29-anvil.md` — Product requirements with user stories + functional/non-functional requirements + acceptance criteria + anti-scope.
-- `coordination/Q29-ANVIL-CHAOS-VERDICT-SPEC.md` — Architect implementation spec (Q29.1/Q29.2/Q29.3 dispositions, P3 ten-axis verification).
 - `demos/ANVIL-DEMO.md` — 12-tick walkthrough (Chaos Mesh `NetworkChaos(delay)` against a generic microservice) showing the suppression annotation visible on Family A inside the declared fault window.
 - [DeploySignal](https://github.com/johnpatrickwarren-oss/deploysignal) — forward-direction canary verdict product on the same substrate.
 - [Tessera](https://github.com/johnpatrickwarren-oss/tessera) — sibling per-shard observation product.
