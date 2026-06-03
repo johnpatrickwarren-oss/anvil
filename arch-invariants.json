@@ -1,0 +1,48 @@
+[
+  {
+    "intent": "no-god-functions",
+    "severity": "block",
+    "id": "no-god-functions",
+    "check": {
+      "kind": "max_complexity",
+      "maxComplexity": 12
+    },
+    "mode": "ratchet",
+    "engine": "ast-grep",
+    "lang": "ts"
+  },
+  {
+    "intent": "no-god-files",
+    "severity": "block",
+    "id": "no-god-files",
+    "check": {
+      "kind": "oversized_files",
+      "maxLines": 500
+    },
+    "mode": "ratchet"
+  },
+  {
+    "intent": "no-secrets",
+    "severity": "block",
+    "id": "no-committed-secrets",
+    "check": {
+      "kind": "secret_scan",
+      "dirs": [
+        "."
+      ]
+    },
+    "max": 0
+  },
+  {
+    "intent": "self-guard",
+    "severity": "block",
+    "id": "no-config-relaxation",
+    "check": {
+      "kind": "config_relaxations",
+      "invariants": "arch-invariants.json",
+      "baseline": "arch-invariants.baseline.json",
+      "against": "HEAD"
+    },
+    "max": 0
+  }
+]

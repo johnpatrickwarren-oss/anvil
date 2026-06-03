@@ -1,0 +1,6 @@
+{
+  "no-god-functions": 1,
+  "no-god-files": 0,
+  "no-committed-secrets": 0,
+  "no-config-relaxation": 0
+}

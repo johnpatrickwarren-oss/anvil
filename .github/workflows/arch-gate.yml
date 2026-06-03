@@ -1,0 +1,35 @@
+name: arch-gate
+# PR gate: run the architectural-invariant gate on every pull request and BLOCK on a violation.
+# The contract is arch-invariants.json (+ .baseline.json) in this repo; the deterministic engine is sprag
+# (public repo — no dependency on the private anchor-guard authoring tool). Because the gate also guards its
+# OWN config (the meta-ratchet / no-config-relaxation invariant), a PR that tries to pass by relaxing or
+# deleting a rule fails here too — the gate can't be talked past, in CI as in the agent loop.
+#
+# sprag is cloned from its public GitHub main so all checks are present (the npm release lags). Pin a commit
+# SHA below for reproducibility in production; once a sprag release on npm carries the current checks, this
+# can be simplified to: npx --yes @johnpwarren.dev/sprag@<ver> check . --invariants … --baseline-in …
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # full history so the meta-ratchet can diff the config against a git ref
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Get sprag (the deterministic gate engine)
+        run: |
+          git clone --depth 1 https://github.com/johnpatrickwarren-oss/sprag.git "$RUNNER_TEMP/sprag"
+          (cd "$RUNNER_TEMP/sprag" && (npm ci || npm install))
+      - name: Architecture gate (blocks the PR on a violation or a rule relaxation)
+        run: >-
+          node "$RUNNER_TEMP/sprag/arch.mjs" check .
+          --invariants arch-invariants.json
+          --baseline-in arch-invariants.baseline.json
