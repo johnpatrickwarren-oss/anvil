@@ -7,16 +7,20 @@ The chaos workflow is structurally a deploy gate run backward. Instead of "deplo
 ## What Anvil is
 
 - **An `ExpectedFailurePattern` contract.** The operator declares at experiment-start what failure shape they expect: which signals will be affected, by what magnitude, with what recovery window, and which detector families to suppress for the duration of the declared fault.
-- **Four chaos-platform adapter stubs.** [Gremlin](https://www.gremlin.com/), [Chaos Mesh](https://chaos-mesh.org/), [AWS FIS](https://aws.amazon.com/fis/), [LitmusChaos](https://litmuschaos.io/). Typed contracts + provenance docstrings; network-call implementations are integrator-supplied at v1. The Chaos Mesh CRD translation is real and tested (12 cases under `test/q29-chaos-mesh-translation.test.ts`).
+- **Four chaos-platform adapters (two with real, tested translations).** [Gremlin](https://www.gremlin.com/), [Chaos Mesh](https://chaos-mesh.org/), [AWS FIS](https://aws.amazon.com/fis/), [LitmusChaos](https://litmuschaos.io/). Typed contracts + provenance docstrings; live network wiring is integrator-supplied at v1. The Chaos Mesh CRD translation is real and tested (12 cases, `test/q29-chaos-mesh-translation.test.ts`), and Gremlin's attack translation + `fetchExpectedFailurePattern` / `fetchChaosExperimentContext` are implemented against an injectable fetch (14 cases, `test/q29-gremlin-translation.test.ts`).
 - **An expected-fault family suppression hook.** Pure post-`evaluateHealth` rewrite. When the current tick lies within the declared fault window `[fault_start_unix, +recovery_seconds]`, the named families flip to `verdict: 'suppressed'` with `reason_code: 'expected_failure_pattern'`. Gated on `expectedFailurePattern !== undefined` → pre-Anvil orchestrator path is byte-identical.
 - **A reference profile** (`profiles/anvil-chaos-experiment.yaml`). Family A + C + D + E enabled with honest per-family calibration provenance; Family B disabled pending chaos-structural signature work.
 - **A verdict vocabulary translation.** At the adapter boundary, the engine's native `proceed | extend | rollback | suppressed_insufficient_samples` becomes `experiment_passed | experiment_still_running | experiment_failed_unexpectedly | experiment_inconclusive`.
 
 ## Empirical position
 
-What's defensible at v0.1.0-pre (the position chaos-engineering buyers should hear):
+What's defensible at v0.1.0-pre (the position chaos-engineering buyers should hear).
+**Attribution note:** every number below is validation of the *DeploySignal engine's* detector
+math, inherited by reference — Anvil itself ships no detector and has not been separately
+validated end-to-end; its own contribution (suppression rewrite + verdict translation) is
+covered by its unit tests, not by these results.
 
-- **Math validated.** Ville bound rigorously verified on iid Gaussian H₀ (Family A betting-e-process: ≤1/131 fires at α = 3.33e-5 across 131 + 1000 trajectory tests). Conformal coverage E[e_t|H₀] = 1 exactly (Family E). Spectral fire-horizon gates at 1σ₀/2σ₀/3σ₀ (Family D).
+- **Math validated (engine).** Ville bound rigorously verified on iid Gaussian H₀ (Family A betting-e-process: ≤1/131 fires at α = 3.33e-5 across 131 + 1000 trajectory tests). Conformal coverage E[e_t|H₀] = 1 exactly (Family E). Spectral fire-horizon gates at 1σ₀/2σ₀/3σ₀ (Family D).
 - **Validated on 5 real LLM-inference workload substrates.** Q66 close-out sweep: **94% FPR pass** (34 of 36 cells) on real_burstgpt + real_azure_llm_inference + real_mooncake + real_huggingface_lmsys_arena × `iid_bootstrap` mode under the per-mode acceptance gate (α × 1.2).
 - **Validated against 5 real-world incident regression profiles.** Best report-card: **4/5 detection within Ville-bound α discipline + 4/4 attribution accuracy** when detected (Anthropic XLA precision drift, Cloudflare KV degradation, GitHub availability latency regression, OpenAI routing error ramp; Anthropic TPU output corruption is the residual miss).
 - **NAB cross-domain transfer: 17.14 aggregate per family** with per-dataset probationary calibration. Below the architect-aspirational ≥50/≥40 gates. The residual gap is within-dataset autocorrelation (φ ≈ 0.95 on real NAB datasets); architectural remediation is Q70 SLICE 2 (self-normalized e-process fallback wired into page-cusum + conformal dispatch), shipped as engine SLICE 1 library primitive at `dist/detectors/self-normalized-e-process-fallback.js` but not yet wired into the detector dispatch path.
@@ -27,7 +31,7 @@ What's defensible at v0.1.0-pre (the position chaos-engineering buyers should he
 DS engine + Anvil adapter family + (optional) Tessera per-shard observation
 ```
 
-- **`@johnpatrickwarren-oss/deploysignal-engine`** — Detector math (Family A/B/C/D/E), Ville-bounded e-processes, hierarchical pooling, topology BFS, e-BH FDR. Anvil consumes it as an npm dependency.
+- **`@johnpatrickwarren-oss/deploysignal-engine`** — Detector math (Family A/B/C/D/E), Ville-bounded e-processes, hierarchical pooling, topology BFS, e-BH FDR. Anvil depends on it for its *types* (the suppression hook and verdict translation are pure rewrites over engine outputs); no detector code executes inside Anvil — the engine runs wherever the orchestrator runs.
 - **`@johnpatrickwarren-oss/anvil`** (this repo) — Chaos-verdict packaging. Contract types + four adapter stubs + suppression hook + reference profile + Chaos Mesh translation.
 - **`@johnpatrickwarren-oss/tessera`** (optional, for shard-targeted chaos) — Per-shard observation layer. Composes cleanly with Anvil for chaos experiments targeting specific shards (pod-kill on shard-04; network-partition on rack-2).
 
@@ -58,14 +62,15 @@ const adapter = new ChaosMeshAdapter(kubeconfigPath, namespace);
 | Engine native | Chaos verdict |
 |---|---|
 | `proceed` | `experiment_passed` |
-| `rollback` | `experiment_failed_unexpectedly` (audit annotation `firing_family_in_suppress_set: bool` distinguishes expected-fault firing from unexpected-blast firing) |
+| `rollback` | `experiment_failed_unexpectedly` (the contract reserves a `firing_family_in_suppress_set: bool` audit annotation to distinguish expected-fault firing from unexpected-blast firing; the translator deliberately does not let it change the verdict, and nothing emits it yet — see `types.ts`) |
 | `extend` | `experiment_still_running` |
 | `suppressed_insufficient_samples` | `experiment_inconclusive` |
 
 ## Status
 
-- v0.1.0-pre — initial extraction from in-tree DeploySignal Addition #29. Consumes `deploysignal-engine` v0.2.0-pre.
-- The four adapter `fetch*` / `emitVerdict` methods throw `not yet implemented (v1 stub)`. The Chaos Mesh CRD translation is real and tested. Wiring the K8s API client / Gremlin REST / AWS FIS SDK / Litmus CRDs to the live platforms is the integrator's slice.
+- v0.1.0-pre — initial extraction from in-tree DeploySignal Addition #29. Consumes `deploysignal-engine` at the tag pinned in `package.json` (prose copies of the pin have gone stale before — package.json is the source of truth).
+- **Two Anvils exist:** this standalone repo (the extraction) and the original in-tree packaging at DeploySignal's `engine/o0/anvil/` (Addition #29), which some sibling docs still describe as the only one. This repo is the standalone continuation; the in-tree copy is the historical origin.
+- Gremlin implements its two `fetch*` methods against an injectable fetch (tested); the remaining adapters' `fetch*` methods and all `fetchDeployContext` / `emitVerdict` methods throw `not yet implemented (v1 stub)`. The Chaos Mesh CRD and Gremlin attack translations are real and tested. Wiring the K8s API client / Gremlin REST auth / AWS FIS SDK / Litmus CRDs to the live platforms is the integrator's slice.
 
 ## See also
 
