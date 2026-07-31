@@ -20,16 +20,13 @@
 #     are future work)
 #
 # Original Q29.3 architect-pick was A+C only. The post-Q66 sweep audit
-# (94% FPR pass on real LLM-inference substrates × iid_bootstrap mode;
-# 4/5 incident detection with 4/4 attribution accuracy under Ville-bound
-# discipline) plus the Q70 calibration-regime architecture establish
-# that D+E are defensible additions. Within-dataset autocorrelation
-# (e.g., NAB ambient_temperature φ ≈ 0.95) remains the calibration-
-# regime gap addressed by Q70 SLICE 2 (self-normalized e-process
-# fallback wired into page-cusum + conformal dispatch); until SLICE 2
-# ships, cross-domain anomaly transfer (e.g., NAB) is limited to 17.14
-# aggregate per family. Within-substrate calibration on real LLM-
-# inference workloads is within budget under iid_bootstrap.
+# plus the Q70 calibration-regime architecture establish that D+E are
+# defensible additions. Within-dataset autocorrelation (e.g., NAB
+# ambient_temperature φ ≈ 0.95) remains a calibration-regime gap.
+#
+# The cross-domain-transfer, FPR-sweep and incident-report-card figures
+# this comment used to cite are withdrawn. See README.md §"Empirical
+# position — withdrawn" for what was wrong with each.
 #
 # Suppression for declared expected_failure_pattern is routed via
 # OrchestrateParams.expectedFailurePattern (transitional stand-in until

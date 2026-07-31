@@ -12,18 +12,69 @@ The chaos workflow is structurally a deploy gate run backward. Instead of "deplo
 - **A reference profile** (`profiles/anvil-chaos-experiment.yaml`). Family A + C + D + E enabled with honest per-family calibration provenance; Family B disabled pending chaos-structural signature work.
 - **A verdict vocabulary translation.** At the adapter boundary, the engine's native `proceed | extend | rollback | suppressed_insufficient_samples` becomes `experiment_passed | experiment_still_running | experiment_failed_unexpectedly | experiment_inconclusive`.
 
-## Empirical position
+## Empirical position — withdrawn
 
-What's defensible at v0.1.0-pre (the position chaos-engineering buyers should hear).
-**Attribution note:** every number below is validation of the *DeploySignal engine's* detector
-math, inherited by reference — Anvil itself ships no detector and has not been separately
-validated end-to-end; its own contribution (suppression rewrite + verdict translation) is
-covered by its unit tests, not by these results.
+This section used to carry a block of detector numbers. Anvil ships no detector and has run no
+benchmark of its own. The numbers were copied in from `deploysignal-engine` and from DeploySignal,
+and four of them were wrong at the version Anvil pins. Each is named below with what was wrong.
 
-- **Math validated (engine).** Ville bound rigorously verified on iid Gaussian H₀ (Family A betting-e-process: ≤1/131 fires at α = 3.33e-5 across 131 + 1000 trajectory tests). Conformal coverage E[e_t|H₀] = 1 exactly (Family E). Spectral fire-horizon gates at 1σ₀/2σ₀/3σ₀ (Family D).
-- **Validated on 5 real LLM-inference workload substrates.** Q66 close-out sweep: **94% FPR pass** (34 of 36 cells) on real_burstgpt + real_azure_llm_inference + real_mooncake + real_huggingface_lmsys_arena × `iid_bootstrap` mode under the per-mode acceptance gate (α × 1.2).
-- **Validated against 5 real-world incident regression profiles.** Best report-card: **4/5 detection within Ville-bound α discipline + 4/4 attribution accuracy** when detected (Anthropic XLA precision drift, Cloudflare KV degradation, GitHub availability latency regression, OpenAI routing error ramp; Anthropic TPU output corruption is the residual miss).
-- **NAB cross-domain transfer: 17.14 aggregate per family** with per-dataset probationary calibration. Below the architect-aspirational ≥50/≥40 gates. The residual gap is within-dataset autocorrelation (φ ≈ 0.95 on real NAB datasets); architectural remediation is Q70 SLICE 2 (self-normalized e-process fallback wired into page-cusum + conformal dispatch), shipped as engine SLICE 1 library primitive at `dist/detectors/self-normalized-e-process-fallback.js` but not yet wired into the detector dispatch path.
+**What Anvil's 45 tests cover.** All of them are unit-level and none are statistical: 12 Chaos Mesh
+CRD translation cases, 14 Gremlin cases (attack translation plus the two `fetch*` methods against an
+injectable fetch), 7 contract-type cases, 6 suppression-rewrite cases, 6 profile-YAML validation
+cases. They establish that the translation and suppression code does what the types say. They
+establish nothing about detector behaviour.
+
+### Withdrawn
+
+**"NAB cross-domain transfer: 17.14 aggregate per family."** Anvil ran no NAB benchmark. There is no
+validation directory and no benchmark artifact in any commit of this repo. The number is also the
+arithmetic signature of a detector that never fires. In the engine's `tools/nab-scoring.ts`, a
+dataset with zero annotation windows scores `100 + fp_count · fp_weight`, an annotated dataset clamps
+to 0, and the family aggregate is an unweighted mean. Six of the 35 datasets in
+`validation/nab/report-2026-07-17-default.json` have zero windows, so total silence scores
+100 × 6/35 = 17.14. "Per family" is wrong on top of that. 17.14 was one detector,
+`family_D_spectral`, at SLICE 4; the same row of the engine's CHANGELOG table gives
+`family_A_betting` 0.00 and `family_A_page_cusum` 17.07.
+
+**"The residual gap is within-dataset autocorrelation; architectural remediation is Q70 SLICE 2."**
+Both halves were already settled inside the release Anvil pins. SLICE 5's AR(1) pre-whitening is what
+moved spectral from 17.14 to 26.55, and SLICE 6 took it to 29.79. All of that shipped in v0.3.0-pre.
+The named remediation was then retired in the same release: the SLICE 7 decision recorded at
+`detectors/self-normalized-e-process-fallback.ts` finds the §7 LIL bound is for empirical-CDF and
+quantile work rather than mean-shift detection, and that applying it as a self-normalized t-statistic
+threshold produces a ~100% false-positive rate on iid Gaussian H₀.
+
+**"94% FPR pass (34 of 36 cells)" on 5 real LLM-inference workload substrates.** The figure appears
+in no DeploySignal or engine artifact. It exists only here and in this repo's own profile comment,
+and the sentence then named four substrates rather than five. I cannot trace it to a run.
+
+**"Anthropic TPU output corruption is the residual miss."** DeploySignal's `CHEAT-SHEET.md` records
+the post-P1 report card as 4/5 with `openai_routing_error_ramp` as the miss. This section named the
+detected profile as missed and the missed profile as detected.
+
+### Restated with their scope
+
+**The Ville-bound test is real, and its baseline is not estimated.** DeploySignal's
+`test/v1-h3-ville-bound-iid-gaussian.test.ts` holds at ≤1 fire in 131 trajectories at α = 3.33e-5,
+and again over 1000. It supplies the true baseline as literals: `baselineMean = 100`, `sigma2 = 4`.
+The engine's validity-envelope layer, added at v0.4.0-pre and so after Anvil's pin, records the same
+detector as `validUnderEstimatedBaseline: false`. That test exists because the FPR sweep saw 47 fires
+in 131 resampled healthy windows (35.9%), where the baseline was estimated. On a chaos workload the
+baseline is estimated.
+
+**`E[e_t|H₀] = 1` exactly holds for one conformal variant.** It is the `weighted_e_value` kind. The
+compiler's default `auto` selector routes there only when the baseline calibration bundle spans at
+least 7 days and expected ESS clears 0.9 × 20000; otherwise it falls back to `unweighted`, a
+parametric-bootstrap p-value that carries no e-value guarantee. This repo's profile declares no
+chaos-workload calibration history, so nothing here establishes which branch a chaos run takes.
+
+**The Family D fire horizons are a synthetic power check.** DeploySignal's
+`test/spectral-e-detector.test.ts` fires within 36 / 17 / 11 ticks at 1σ₀ / 2σ₀ / 3σ₀ against fixed
+anchors μ₀ = 0.42, σ₀ = 0.05. That is a construction, not a measurement on a workload.
+
+For current guarantees, read `deploysignal-engine` at the version you actually run. Anvil pins
+`v0.3.0-pre` (2026-05-26); the engine is 10 releases further on, and the validity-envelope layer that
+qualifies the Ville-bound claim above landed after the pin.
 
 ## The bundle
 
@@ -68,6 +119,7 @@ const adapter = new ChaosMeshAdapter(kubeconfigPath, namespace);
 
 ## Status
 
+- **Dormant since 2026-07-02.** Pinned to `deploysignal-engine` v0.3.0-pre, 10 releases behind current. Consumption is types-only (`types/policy`, `types/verdict`), and both of those interfaces are byte-identical between v0.3.0-pre and the engine's current main. No engine code executes in this repo.
 - v0.1.0-pre — initial extraction from in-tree DeploySignal Addition #29. Consumes `deploysignal-engine` at the tag pinned in `package.json` (prose copies of the pin have gone stale before — package.json is the source of truth).
 - **Two Anvils exist:** this standalone repo (the extraction) and the original in-tree packaging at DeploySignal's `engine/o0/anvil/` (Addition #29), which some sibling docs still describe as the only one. This repo is the standalone continuation; the in-tree copy is the historical origin.
 - Gremlin implements its two `fetch*` methods against an injectable fetch (tested); the remaining adapters' `fetch*` methods and all `fetchDeployContext` / `emitVerdict` methods throw `not yet implemented (v1 stub)`. The Chaos Mesh CRD and Gremlin attack translations are real and tested. Wiring the K8s API client / Gremlin REST auth / AWS FIS SDK / Litmus CRDs to the live platforms is the integrator's slice.
