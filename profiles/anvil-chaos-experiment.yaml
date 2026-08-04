@@ -6,10 +6,9 @@
 # Family coverage at v1.1 (revisited post-Q66 sweep + Q70 framework):
 #   - Family A (per-signal mean shift): enabled, primary detector
 #   - Family C (multivariate drift): enabled, unexpected-blast catcher
-#   - Family D (spectral / oscillation): enabled — scale-invariant in its
-#     math anchor (peak |ACF| vs μ₀/σ₀); applicable to chaos workloads
-#     with natural oscillation signatures (capacity injection, network
-#     partition recovery cycles)
+#   - Family D (spectral / oscillation): may run as a HEURISTIC only —
+#     reclassified 2026-08-04 (deploysignal 3b3550c): not Ville-bounded,
+#     spends no α. Oscillation signatures it flags are advisory.
 #   - Family E (conformal novelty): enabled with honest calibration
 #     provenance — the conformal coverage math is rigorous; the
 #     calibration substrate must be declared in the audit record
@@ -38,9 +37,10 @@ id: anvil-chaos-experiment
 version: "1.0.0"
 extends: generic-microservice
 description: >
-  Anvil chaos-engineering verdict profile. Family A + C + D + E enabled
-  at v1.1 with documented per-family calibration provenance; Family B
-  disabled pending chaos-structural signature work. Sequenced over the
+  Anvil chaos-engineering verdict profile. Families A + C + E spend α
+  with documented per-family calibration provenance; Family B disabled
+  pending chaos-structural signature work; Family D advisory-only since
+  its 2026-08-04 heuristic reclassification. Sequenced over the
   deploysignal-engine Ville-bounded portfolio with chaos-aware
   suppression keyed against the operator-declared
   expected_failure_pattern. Targets Verica-style chaos-engineering
@@ -77,17 +77,21 @@ joint_vector:
   include_in_family_e: true
 
 alpha_allocation:
-  # 4-family active portfolio. α-budget split with A as primary (40%),
-  # C as unexpected-blast catcher (20%), D as oscillation/recovery
-  # catcher (20%), E as novelty/distributional-shift catcher (20%).
-  # B held at 0 pending chaos-structural signature work.
+  # 3-family α-consuming portfolio: A primary, C unexpected-blast
+  # catcher, E novelty catcher. B held at 0 pending chaos-structural
+  # signature work. D held at 0 since 2026-08-04: the spectral
+  # e-detector was reclassified heuristic, not Ville
+  # (deploysignal 3b3550c — measured FAR 0.576 vs nominal 0.05 at
+  # oracle parameters under a pre-registered H0 battery, engine
+  # v0.6.6-pre). A heuristic may not spend α inside an anytime-valid
+  # budget; its former 2.0e-4 share is reserved, not redistributed.
   per_family:
     A: 4.0e-4
     B: 0.0
     C: 2.0e-4
-    D: 2.0e-4
+    D: 0.0
     E: 2.0e-4
-  total: 1.0e-3
+  total: 8.0e-4
 
 cell_dimensions:
   # hour-of-day + day-of-week dimensions for cell stratification; the

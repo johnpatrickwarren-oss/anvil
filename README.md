@@ -73,8 +73,8 @@ chaos-workload calibration history, so nothing here establishes which branch a c
 anchors μ₀ = 0.42, σ₀ = 0.05. That is a construction, not a measurement on a workload.
 
 For current guarantees, read `deploysignal-engine` at the version you actually run. Anvil pins
-`v0.3.0-pre` (2026-05-26); the engine is 10 releases further on, and the validity-envelope layer that
-qualifies the Ville-bound claim above landed after the pin.
+`v0.6.6-pre` (re-pinned 2026-08-03 from v0.3.0-pre), which includes the validity-envelope layer that
+qualifies the Ville-bound claim above.
 
 ## The bundle
 
